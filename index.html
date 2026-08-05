@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analizador de Futuros Perpetuos - Binance & Bybit</title>
+  <meta name="description" content="Escáner cuantitativo de futuros perpetuos USDT en Binance y Bybit. Detecta pares en sobrecompra (RSI > 70) y desviaciones superiores al 2% respecto a la EMA 3 en 30m y 1h.">
+  <link rel="stylesheet" href="./src/css/main.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- Header / Navbar -->
+  <header class="app-header">
+    <div class="brand">
+      <i data-lucide="candlestick-chart" class="brand-icon"></i>
+      <h1 class="brand-title">Crypto Futures Screener</h1>
+    </div>
+
+    <div class="header-controls">
+      <div class="timer-box" title="Próximo escaneo automático">
+        <i data-lucide="clock"></i>
+        <span>Siguiente escaneo: <strong id="timer-countdown">01:00</strong></span>
+      </div>
+
+      <button id="btn-settings" class="btn btn-secondary" title="Configurar parámetros">
+        <i data-lucide="sliders"></i> Ajustes
+      </button>
+
+      <button id="btn-scan" class="btn btn-primary">
+        <i data-lucide="refresh-cw"></i> Escanear Ahora
+      </button>
+    </div>
+  </header>
+
+  <!-- Layout Principal -->
+  <main class="app-container">
+
+    <!-- Tarjetas de Estadísticas Resumen -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-cyan">
+          <i data-lucide="layers"></i>
+        </div>
+        <div class="stat-info">
+          <h4>Pares Analizados</h4>
+          <div id="stat-total-analyzed" class="stat-value font-mono">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-red">
+          <i data-lucide="flame"></i>
+        </div>
+        <div class="stat-info">
+          <h4>RSI Sobrecompra (>70)</h4>
+          <div id="stat-rsi-count" class="stat-value font-mono">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-green">
+          <i data-lucide="trending-up"></i>
+        </div>
+        <div class="stat-info">
+          <h4>Desviación EMA 3 (>2%)</h4>
+          <div id="stat-ema-count" class="stat-value font-mono">0</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon-wrapper stat-icon-cyan">
+          <i data-lucide="activity"></i>
+        </div>
+        <div class="stat-info">
+          <h4>Estado del Sistema</h4>
+          <div id="last-updated-text" class="stat-value font-mono" style="font-size: 0.95rem; font-weight: 500;">Listo para escanear</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Barra de Progreso de Escaneo -->
+    <div id="progress-bar" class="progress-container">
+      <div class="progress-header">
+        <span id="progress-text" class="font-bold">Iniciando escaneo...</span>
+        <span id="progress-pair" class="font-mono text-muted">BTCUSDT</span>
+      </div>
+      <div class="progress-track">
+        <div id="progress-fill" class="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- Navegación por Pestañas y Filtros -->
+    <section class="section-header">
+      <nav class="tabs-nav">
+        <button id="tab-rsi" class="tab-btn active">
+          <i data-lucide="flame"></i> Pares en Sobrecompra (RSI > 70)
+        </button>
+        <button id="tab-ema" class="tab-btn">
+          <i data-lucide="line-chart"></i> Distancia EMA 3 / EMA 10 (> 2%)
+        </button>
+      </nav>
+
+      <div class="filter-bar">
+        <!-- Filtro adicional de dirección para la tabla EMA (Visible solo en Pestaña EMA) -->
+        <div id="ema-direction-wrapper" style="display: none;">
+          <select id="filter-ema-direction" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
+            <option value="all">Ver Todas las Tendencias</option>
+            <option value="above">Precio Sobre EMA (Pump)</option>
+            <option value="below">Precio Bajo EMA (Dump)</option>
+          </select>
+        </div>
+
+        <div class="search-input-wrapper">
+          <i data-lucide="search"></i>
+          <input type="text" id="search-symbol" class="search-input" placeholder="Buscar par (ej. SOL, BTC)...">
+        </div>
+      </div>
+    </section>
+
+    <!-- Contenido Pestaña 1: Tabla RSI -->
+    <div id="content-rsi" class="tab-content active">
+      <div id="container-rsi-table" class="table-card">
+        <div class="empty-state">
+          <i data-lucide="loader-2" class="empty-icon spin"></i>
+          <p>Presiona "Escanear Ahora" para analizar los mercados de Binance y Bybit...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Pestaña 2: Tabla EMA 3 & EMA 10 -->
+    <div id="content-ema" class="tab-content">
+      <div id="container-ema-table" class="table-card">
+        <div class="empty-state">
+          <i data-lucide="loader-2" class="empty-icon spin"></i>
+          <p>Presiona "Escanear Ahora" para analizar la distancia a las EMAs...</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal de Configuración -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3><i data-lucide="settings"></i> Ajustes del Analizador</h3>
+        <button id="btn-close-modal" class="btn-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="setting-refresh">Intervalo de Actualización Automática</label>
+          <select id="setting-refresh" class="form-control">
+            <option value="30">Cada 30 Segundos</option>
+            <option value="60" selected>Cada 1 Minuto (Recomendado)</option>
+            <option value="120">Cada 2 Minutos</option>
+            <option value="300">Cada 5 Minutos</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="setting-exchange">Exchanges a Escanear</label>
+          <select id="setting-exchange" class="form-control">
+            <option value="all" selected>Ambos (Binance Futures + Bybit Linear)</option>
+            <option value="binance">Binance Futures Solamente</option>
+            <option value="bybit">Bybit Linear Solamente</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="setting-limit">Límite de Pares por Volumen 24h</label>
+          <select id="setting-limit" class="form-control">
+            <option value="50">Top 50 Pares por Volumen (Súper Rápido)</option>
+            <option value="100" selected>Top 100 Pares por Volumen (Equilibrado)</option>
+            <option value="200">Top 200 Pares por Volumen</option>
+            <option value="0">Todos los Pares USDT Perpetuos</option>
+          </select>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+        <div class="form-group">
+          <label for="setting-rsi-threshold">Umbral de Sobrecompra RSI (por defecto: > 70)</label>
+          <input type="number" id="setting-rsi-threshold" class="form-control" value="70" min="50" max="95" step="1">
+        </div>
+
+        <div class="form-group">
+          <label for="setting-rsi-tf">Temporalidad para el Cálculo del RSI</label>
+          <select id="setting-rsi-tf" class="form-control">
+            <option value="1m">1 minuto</option>
+            <option value="3m">3 minutos</option>
+            <option value="5m" selected>5 minutos (Predeterminado)</option>
+            <option value="15m">15 minutos</option>
+            <option value="30m">30 minutos</option>
+            <option value="1h">1 hora</option>
+          </select>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+        <div class="form-group">
+          <label for="setting-ema3-threshold">Distancia Mínima a EMA 3 (%) en 30m y 1h</label>
+          <input type="number" id="setting-ema3-threshold" class="form-control" value="2.0" min="0.5" max="20" step="0.1">
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-group">
+            <input type="checkbox" id="setting-ema10-toggle">
+            <span>Activar Filtro Adicional para EMA 10</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="setting-ema10-threshold">Distancia Mínima a EMA 10 (%) en 30m y 1h</label>
+          <input type="number" id="setting-ema10-threshold" class="form-control" value="1.0" min="0.5" max="20" step="0.1">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="btn-save-settings" class="btn btn-primary">
+          <i data-lucide="check"></i> Guardar y Re-escanear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
