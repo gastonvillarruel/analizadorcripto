@@ -106,8 +106,8 @@
         <!-- Filtro adicional de dirección para la tabla EMA (Visible solo en Pestaña EMA) -->
         <div id="ema-direction-wrapper" style="display: none;">
           <select id="filter-ema-direction" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
+            <option value="above" selected>Precio Sobre EMA (Pump)</option>
             <option value="all">Ver Todas las Tendencias</option>
-            <option value="above">Precio Sobre EMA (Pump)</option>
             <option value="below">Precio Bajo EMA (Dump)</option>
           </select>
         </div>
@@ -163,8 +163,8 @@
         <div class="form-group">
           <label for="setting-exchange">Exchanges a Escanear</label>
           <select id="setting-exchange" class="form-control">
-            <option value="all" selected>Ambos (Binance Futures + Bybit Linear)</option>
-            <option value="binance">Binance Futures Solamente</option>
+            <option value="binance" selected>Binance Futures Solamente</option>
+            <option value="all">Ambos (Binance Futures + Bybit Linear)</option>
             <option value="bybit">Bybit Linear Solamente</option>
           </select>
         </div>
@@ -173,8 +173,8 @@
           <label for="setting-limit">Límite de Pares por Volumen 24h</label>
           <select id="setting-limit" class="form-control">
             <option value="50">Top 50 Pares por Volumen (Súper Rápido)</option>
-            <option value="100" selected>Top 100 Pares por Volumen (Equilibrado)</option>
-            <option value="200">Top 200 Pares por Volumen</option>
+            <option value="100">Top 100 Pares por Volumen (Equilibrado)</option>
+            <option value="200" selected>Top 200 Pares por Volumen</option>
             <option value="0">Todos los Pares USDT Perpetuos</option>
           </select>
         </div>

@@ -5,13 +5,13 @@ import { calculateRSI, calculateEMA, calculateEmaDistance } from '../utils/indic
 export class ScreenerEngine {
   constructor() {
     this.settings = {
-      exchange: 'all',            // 'all' | 'binance' | 'bybit'
+      exchange: 'binance',        // 'binance' | 'all' | 'bybit'
       rsiThreshold: 70,           // RSI mayor a este valor (ej. 70)
       rsiTimeframe: '5m',         // Temporalidad RSI (default 5m)
       ema3DistanceThreshold: 2.0, // Distancia % mayor a este valor (default 2%)
       ema10FilterActive: false,   // Filtro adicional opcional para EMA 10
       ema10DistanceThreshold: 1.0,// Umbral % para EMA 10
-      limitPairs: 100,            // Top N por volumen en 24h (50, 100, 200, 0=todos)
+      limitPairs: 200,            // Top N por volumen en 24h (50, 100, 200, 0=todos)
       autoRefreshInterval: 60,    // Segundos (60 = 1 min)
       soundAlerts: false
     };
@@ -212,11 +212,9 @@ export class ScreenerEngine {
 
       await Promise.all(workers);
 
-      // Ordenar resultados:
-      // RSI ordenado de mayor a menor
-      rsiOverboughtResults.sort((a, b) => b.rsi - a.rsi);
-      // EMA ordenado por la mayor distancia a EMA 3 de mayor a menor
-      emaDistanceResults.sort((a, b) => b.maxDist3 - a.maxDist3);
+      // Ordenar resultados por defecto según el cambio en 24h (de mayor a menor):
+      rsiOverboughtResults.sort((a, b) => b.change24h - a.change24h);
+      emaDistanceResults.sort((a, b) => b.change24h - a.change24h);
 
       this.lastResults = {
         timestamp: new Date(),

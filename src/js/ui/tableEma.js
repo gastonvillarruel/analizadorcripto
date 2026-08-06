@@ -1,12 +1,12 @@
-import { formatPrice, formatPercent, formatVolume, getExchangeUrl, getTradingViewUrl } from '../utils/formatters.js';
+import { formatPercent, getExchangeUrl, getTradingViewUrl, renderExchangeLogo } from '../utils/formatters.js';
 
 export class TableEmaManager {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     this.data = [];
     this.searchQuery = '';
-    this.directionFilter = 'all'; // 'all' | 'above' | 'below'
-    this.sortField = 'maxDist3';
+    this.directionFilter = 'above'; // 'above' (pump por defecto) | 'all' | 'below'
+    this.sortField = 'change24h';
     this.sortAsc = false;
   }
 
@@ -47,6 +47,9 @@ export class TableEmaManager {
       let valA = a[this.sortField];
       let valB = b[this.sortField];
 
+      if (valA === undefined || valA === null) valA = 0;
+      if (valB === undefined || valB === null) valB = 0;
+
       if (typeof valA === 'string') valA = valA.toLowerCase();
       if (typeof valB === 'string') valB = valB.toLowerCase();
 
@@ -77,7 +80,7 @@ export class TableEmaManager {
       this.container.innerHTML = `
         <div class="empty-state">
           <i data-lucide="trending-up" class="empty-icon"></i>
-          <p>No se encontraron pares con distancia a la EMA 3/10 superior al umbral configurado.</p>
+          <p>No se encontraron pares con distancia a la EMA 3 superior al umbral configurado.</p>
         </div>
       `;
       if (window.lucide) window.lucide.createIcons();
@@ -94,14 +97,12 @@ export class TableEmaManager {
         <table class="crypto-table">
           <thead>
             <tr>
-              <th>Exchange</th>
+              <th class="col-exchange">Exchange</th>
               <th class="sortable" id="sort-ema-symbol">Par ${sortIcon('symbol')}</th>
-              <th class="sortable" id="sort-ema-price">Precio Actual ${sortIcon('price')}</th>
+              <th class="sortable" id="sort-ema-change24h">Cambio 24h ${sortIcon('change24h')}</th>
               <th class="sortable" id="sort-ema-max3">Dist. EMA 3 (30m) ${sortIcon('maxDist3')}</th>
               <th>Dist. EMA 3 (1h)</th>
-              <th class="sortable" id="sort-ema-max10">Dist. EMA 10 (30m) ${sortIcon('maxDist10')}</th>
-              <th>Dist. EMA 10 (1h)</th>
-              <th>Tendencia / Estado</th>
+              <th class="col-status">Tendencia / Estado</th>
               <th class="text-right">Acciones</th>
             </tr>
           </thead>
@@ -109,9 +110,9 @@ export class TableEmaManager {
     `;
 
     filtered.forEach(item => {
-      const exchangeBadge = item.exchange === 'binance' 
-        ? `<span class="badge badge-binance"><i data-lucide="box"></i> Binance</span>`
-        : `<span class="badge badge-bybit"><i data-lucide="zap"></i> Bybit</span>`;
+      const exchangeBadge = renderExchangeLogo(item.exchange);
+      const cleanSymbol = item.symbol.replace('USDT', '');
+      const change24hClass = item.change24h >= 0 ? 'text-green' : 'text-red';
 
       // Helper para distintivo de distancia EMA
       const renderDistBadge = (distObj) => {
@@ -130,22 +131,17 @@ export class TableEmaManager {
 
       html += `
         <tr>
-          <td>${exchangeBadge}</td>
+          <td class="col-exchange">${exchangeBadge}</td>
           <td>
-            <div class="symbol-cell">
-              <span class="symbol-name">${item.symbol}</span>
-              <span class="badge-sub">PERP</span>
-            </div>
+            <span class="symbol-name">${cleanSymbol}</span>
           </td>
-          <td class="font-mono font-bold">$${formatPrice(item.price)}</td>
+          <td class="font-mono font-bold ${change24hClass}">${formatPercent(item.change24h)}</td>
           <td>${renderDistBadge(item.distEma3_30m)}</td>
           <td>${renderDistBadge(item.distEma3_1h)}</td>
-          <td>${renderDistBadge(item.distEma10_30m)}</td>
-          <td>${renderDistBadge(item.distEma10_1h)}</td>
-          <td>${statusBadge}</td>
+          <td class="col-status">${statusBadge}</td>
           <td class="text-right">
             <div class="action-buttons">
-              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon" title="Abrir en Exchange">
+              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-exchange" title="Abrir en Exchange">
                 <i data-lucide="external-link"></i>
               </a>
               <a href="${getTradingViewUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-tv" title="Gráfico en TradingView">
@@ -172,9 +168,8 @@ export class TableEmaManager {
     };
 
     bindSort('sort-ema-symbol', 'symbol');
-    bindSort('sort-ema-price', 'price');
+    bindSort('sort-ema-change24h', 'change24h');
     bindSort('sort-ema-max3', 'maxDist3');
-    bindSort('sort-ema-max10', 'maxDist10');
 
     if (window.lucide) window.lucide.createIcons();
   }

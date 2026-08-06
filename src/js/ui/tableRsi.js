@@ -1,11 +1,11 @@
-import { formatPercent, getExchangeUrl, getTradingViewUrl } from '../utils/formatters.js';
+import { formatPercent, getExchangeUrl, getTradingViewUrl, renderExchangeLogo } from '../utils/formatters.js';
 
 export class TableRsiManager {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     this.data = [];
     this.searchQuery = '';
-    this.sortField = 'rsi';
+    this.sortField = 'change24h';
     this.sortAsc = false;
   }
 
@@ -80,11 +80,11 @@ export class TableRsiManager {
         <table class="crypto-table">
           <thead>
             <tr>
-              <th>Exchange</th>
+              <th class="col-exchange">Exchange</th>
               <th class="sortable" id="sort-rsi-symbol">Par ${sortIcon('symbol')}</th>
-              <th class="sortable" id="sort-rsi-change1h">Cambio 1h ${sortIcon('change1h')}</th>
+              <th class="sortable col-change1h" id="sort-rsi-change1h">Cambio 1h ${sortIcon('change1h')}</th>
               <th class="sortable" id="sort-rsi-change24h">Cambio 24h ${sortIcon('change24h')}</th>
-              <th class="sortable" id="sort-rsi-val">RSI (${filtered[0]?.rsiTimeframe || '5m'}) ${sortIcon('rsi')}</th>
+              <th class="sortable col-rsi" id="sort-rsi-val">RSI (${filtered[0]?.rsiTimeframe || '5m'}) ${sortIcon('rsi')}</th>
               <th class="text-right">Acciones</th>
             </tr>
           </thead>
@@ -92,9 +92,8 @@ export class TableRsiManager {
     `;
 
     filtered.forEach(item => {
-      const exchangeBadge = item.exchange === 'binance' 
-        ? `<span class="badge badge-binance"><i data-lucide="box"></i> Binance</span>`
-        : `<span class="badge badge-bybit"><i data-lucide="zap"></i> Bybit</span>`;
+      const exchangeBadge = renderExchangeLogo(item.exchange);
+      const cleanSymbol = item.symbol.replace('USDT', '');
 
       const change1hClass = (item.change1h || 0) >= 0 ? 'text-green' : 'text-red';
       const change24hClass = item.change24h >= 0 ? 'text-green' : 'text-red';
@@ -102,23 +101,20 @@ export class TableRsiManager {
 
       html += `
         <tr>
-          <td>${exchangeBadge}</td>
+          <td class="col-exchange">${exchangeBadge}</td>
           <td>
-            <div class="symbol-cell">
-              <span class="symbol-name">${item.symbol}</span>
-              <span class="badge-sub">PERP</span>
-            </div>
+            <span class="symbol-name">${cleanSymbol}</span>
           </td>
-          <td class="font-mono font-bold ${change1hClass}">${formatPercent(item.change1h)}</td>
-          <td class="font-mono ${change24hClass}">${formatPercent(item.change24h)}</td>
-          <td>
+          <td class="font-mono font-bold ${change1hClass} col-change1h">${formatPercent(item.change1h)}</td>
+          <td class="font-mono font-bold ${change24hClass}">${formatPercent(item.change24h)}</td>
+          <td class="col-rsi">
             <span class="badge ${rsiClass} font-mono font-bold">
               🔥 ${item.rsi}
             </span>
           </td>
           <td class="text-right">
             <div class="action-buttons">
-              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon" title="Abrir en Exchange">
+              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-exchange" title="Abrir en Exchange">
                 <i data-lucide="external-link"></i>
               </a>
               <a href="${getTradingViewUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-tv" title="Gráfico en TradingView">
