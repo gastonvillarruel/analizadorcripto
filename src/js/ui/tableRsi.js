@@ -4,13 +4,15 @@ export class TableRsiManager {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     this.data = [];
+    this.highlightSymbols = new Set();
     this.searchQuery = '';
     this.sortField = 'change24h';
     this.sortAsc = false;
   }
 
-  setData(data) {
+  setData(data, highlightSymbols = new Set()) {
     this.data = data || [];
+    this.highlightSymbols = highlightSymbols;
     this.render();
   }
 
@@ -20,7 +22,7 @@ export class TableRsiManager {
   }
 
   getFilteredData() {
-    let result = [...this.data];
+    let result = this.data.filter(item => item.rsi < 100);
 
     if (this.searchQuery) {
       result = result.filter(item => item.symbol.toLowerCase().includes(this.searchQuery));
@@ -80,12 +82,12 @@ export class TableRsiManager {
         <table class="crypto-table">
           <thead>
             <tr>
-              <th class="col-exchange">Exchange</th>
+              <th class="col-exchange">Exc</th>
               <th class="sortable" id="sort-rsi-symbol">Par ${sortIcon('symbol')}</th>
-              <th class="sortable col-change1h" id="sort-rsi-change1h">Cambio 1h ${sortIcon('change1h')}</th>
-              <th class="sortable" id="sort-rsi-change24h">Cambio 24h ${sortIcon('change24h')}</th>
+              <th class="sortable col-change1h" id="sort-rsi-change1h">1h ${sortIcon('change1h')}</th>
+              <th class="sortable" id="sort-rsi-change24h">24h ${sortIcon('change24h')}</th>
               <th class="sortable col-rsi" id="sort-rsi-val">RSI (${filtered[0]?.rsiTimeframe || '5m'}) ${sortIcon('rsi')}</th>
-              <th class="text-right">Acciones</th>
+              <th class="text-right">Ver</th>
             </tr>
           </thead>
           <tbody>
@@ -99,11 +101,21 @@ export class TableRsiManager {
       const change24hClass = item.change24h >= 0 ? 'text-green' : 'text-red';
       const rsiClass = item.rsi >= 80 ? 'badge-rsi-extreme' : 'badge-rsi-high';
 
+      const symbolKey = `${item.symbol}_${item.exchange}`;
+      const isConfluence = this.highlightSymbols.has(symbolKey) || this.highlightSymbols.has(item.symbol);
+      const rowClass = isConfluence ? 'row-confluence' : '';
+      const confluenceBadge = isConfluence 
+        ? `<span class="badge badge-confluence" title="¡Par presente en RSI y EMA!"><i data-lucide="zap"></i></span>` 
+        : '';
+
       html += `
-        <tr>
+        <tr class="${rowClass}">
           <td class="col-exchange">${exchangeBadge}</td>
           <td>
-            <span class="symbol-name">${cleanSymbol}</span>
+            <div class="symbol-wrapper">
+              <span class="symbol-name">${cleanSymbol}</span>
+              ${confluenceBadge}
+            </div>
           </td>
           <td class="font-mono font-bold ${change1hClass} col-change1h">${formatPercent(item.change1h)}</td>
           <td class="font-mono font-bold ${change24hClass}">${formatPercent(item.change24h)}</td>
@@ -114,9 +126,6 @@ export class TableRsiManager {
           </td>
           <td class="text-right">
             <div class="action-buttons">
-              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-exchange" title="Abrir en Exchange">
-                <i data-lucide="external-link"></i>
-              </a>
               <a href="${getTradingViewUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-tv" title="Gráfico en TradingView">
                 <i data-lucide="line-chart"></i>
               </a>

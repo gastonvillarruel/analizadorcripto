@@ -4,14 +4,16 @@ export class TableEmaManager {
   constructor(containerId) {
     this.container = document.getElementById(containerId);
     this.data = [];
+    this.highlightSymbols = new Set();
     this.searchQuery = '';
     this.directionFilter = 'above'; // 'above' (pump por defecto) | 'all' | 'below'
     this.sortField = 'change24h';
     this.sortAsc = false;
   }
 
-  setData(data) {
+  setData(data, highlightSymbols = new Set()) {
     this.data = data || [];
+    this.highlightSymbols = highlightSymbols;
     this.render();
   }
 
@@ -97,13 +99,13 @@ export class TableEmaManager {
         <table class="crypto-table">
           <thead>
             <tr>
-              <th class="col-exchange">Exchange</th>
+              <th class="col-exchange">Exc</th>
               <th class="sortable" id="sort-ema-symbol">Par ${sortIcon('symbol')}</th>
-              <th class="sortable" id="sort-ema-change24h">Cambio 24h ${sortIcon('change24h')}</th>
-              <th class="sortable" id="sort-ema-max3">Dist. EMA 3 (30m) ${sortIcon('maxDist3')}</th>
-              <th>Dist. EMA 3 (1h)</th>
-              <th class="col-status">Tendencia / Estado</th>
-              <th class="text-right">Acciones</th>
+              <th class="sortable" id="sort-ema-change24h">24h ${sortIcon('change24h')}</th>
+              <th class="sortable" id="sort-ema-max3">EMA 3 (30m) ${sortIcon('maxDist3')}</th>
+              <th>EMA 3 (1h)</th>
+              <th class="col-status">Trend</th>
+              <th class="text-right">Ver</th>
             </tr>
           </thead>
           <tbody>
@@ -113,27 +115,40 @@ export class TableEmaManager {
       const exchangeBadge = renderExchangeLogo(item.exchange);
       const cleanSymbol = item.symbol.replace('USDT', '');
       const change24hClass = item.change24h >= 0 ? 'text-green' : 'text-red';
+      const targetThreshold = item.targetEma3Threshold ?? 2.0;
 
       // Helper para distintivo de distancia EMA
       const renderDistBadge = (distObj) => {
         if (!distObj) return '-';
         const isAbove = distObj.direction === 'above';
+        const isBelowThreshold = distObj.absDistancePct < targetThreshold;
         const badgeClass = isAbove ? 'badge-ema-above' : 'badge-ema-below';
-        const sign = isAbove ? '▲ +' : '▼ ';
-        return `<span class="badge ${badgeClass} font-mono font-bold">${sign}${distObj.distancePct}%</span>`;
+        const dimmedClass = isBelowThreshold ? ' badge-ema-dimmed' : '';
+        const sign = isAbove ? '+' : '';
+        return `<span class="badge ${badgeClass}${dimmedClass} font-mono font-bold">${sign}${distObj.distancePct}%</span>`;
       };
 
-      // Estado general: ¿Disparado por encima o descolgado por debajo?
+      // Estado general: ¿Disparado por encima o descolgado por debajo? (solo icono sin letras)
       const primaryDir = item.distEma3_30m.direction === 'above' ? 'above' : 'below';
       const statusBadge = primaryDir === 'above'
-        ? `<span class="badge badge-bullish"><i data-lucide="trending-up"></i> Sobre EMA (Pump)</span>`
-        : `<span class="badge badge-bearish"><i data-lucide="trending-down"></i> Bajo EMA (Dump)</span>`;
+        ? `<span class="badge badge-bullish" title="Sobre EMA (Pump)"><i data-lucide="trending-up"></i></span>`
+        : `<span class="badge badge-bearish" title="Bajo EMA (Dump)"><i data-lucide="trending-down"></i></span>`;
+
+      const symbolKey = `${item.symbol}_${item.exchange}`;
+      const isConfluence = this.highlightSymbols.has(symbolKey) || this.highlightSymbols.has(item.symbol);
+      const rowClass = isConfluence ? 'row-confluence' : '';
+      const confluenceBadge = isConfluence 
+        ? `<span class="badge badge-confluence" title="¡Par presente en RSI y EMA!"><i data-lucide="zap"></i></span>` 
+        : '';
 
       html += `
-        <tr>
+        <tr class="${rowClass}">
           <td class="col-exchange">${exchangeBadge}</td>
           <td>
-            <span class="symbol-name">${cleanSymbol}</span>
+            <div class="symbol-wrapper">
+              <span class="symbol-name">${cleanSymbol}</span>
+              ${confluenceBadge}
+            </div>
           </td>
           <td class="font-mono font-bold ${change24hClass}">${formatPercent(item.change24h)}</td>
           <td>${renderDistBadge(item.distEma3_30m)}</td>
@@ -141,9 +156,6 @@ export class TableEmaManager {
           <td class="col-status">${statusBadge}</td>
           <td class="text-right">
             <div class="action-buttons">
-              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-exchange" title="Abrir en Exchange">
-                <i data-lucide="external-link"></i>
-              </a>
               <a href="${getTradingViewUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-tv" title="Gráfico en TradingView">
                 <i data-lucide="line-chart"></i>
               </a>

@@ -10,10 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const tableEma = new TableEmaManager('container-ema-table');
   const controls = new ControlsManager(engine);
 
-  // 2. Vincular resultados del escáner a las tablas
+  // 2. Vincular resultados del escáner a las tablas y calcular coincidencia (confluencia)
   engine.on('onComplete', (res) => {
-    tableRsi.setData(res.rsiOverbought);
-    tableEma.setData(res.emaDistance);
+    const rsiList = (res.rsiOverbought || []).filter(item => item.rsi < 100);
+    const emaList = (res.emaDistance || []).filter(item => item.rsi === undefined || item.rsi === null || item.rsi < 100);
+
+    const rsiKeys = new Set(rsiList.map(i => `${i.symbol}_${i.exchange}`));
+    const emaKeys = new Set(emaList.map(i => `${i.symbol}_${i.exchange}`));
+
+    const commonKeys = new Set([...rsiKeys].filter(key => emaKeys.has(key)));
+
+    tableRsi.setData(rsiList, commonKeys);
+    tableEma.setData(emaList, commonKeys);
   });
 
   // 3. Manejo de Pestañas (Tabs)

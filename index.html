@@ -21,15 +21,15 @@
     <div class="header-controls">
       <div class="timer-box" title="Próximo escaneo automático">
         <i data-lucide="clock"></i>
-        <span>Siguiente escaneo: <strong id="timer-countdown">01:00</strong></span>
+        <strong id="timer-countdown">01:00</strong>
       </div>
 
-      <button id="btn-settings" class="btn btn-secondary" title="Configurar parámetros">
-        <i data-lucide="sliders"></i> Ajustes
+      <button id="btn-settings" class="btn btn-secondary btn-icon-only" title="Configurar parámetros" aria-label="Configurar parámetros">
+        <i data-lucide="settings"></i>
       </button>
 
-      <button id="btn-scan" class="btn btn-primary">
-        <i data-lucide="refresh-cw"></i> Escanear Ahora
+      <button id="btn-scan" class="btn btn-primary btn-icon-only" title="Escanear ahora" aria-label="Escanear ahora">
+        <i data-lucide="refresh-cw"></i>
       </button>
     </div>
   </header>
@@ -103,38 +103,42 @@
       </nav>
 
       <div class="filter-bar">
-        <!-- Filtro adicional de dirección para la tabla EMA (Visible solo en Pestaña EMA) -->
-        <div id="ema-direction-wrapper" style="display: none;">
+        <!-- Filtro adicional de dirección para la tabla EMA -->
+        <div id="ema-direction-wrapper">
           <select id="filter-ema-direction" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
             <option value="above" selected>Precio Sobre EMA (Pump)</option>
             <option value="all">Ver Todas las Tendencias</option>
             <option value="below">Precio Bajo EMA (Dump)</option>
           </select>
         </div>
-
-        <div class="search-input-wrapper">
-          <i data-lucide="search"></i>
-          <input type="text" id="search-symbol" class="search-input" placeholder="Buscar par (ej. SOL, BTC)...">
-        </div>
       </div>
     </section>
 
-    <!-- Contenido Pestaña 1: Tabla RSI -->
-    <div id="content-rsi" class="tab-content active">
-      <div id="container-rsi-table" class="table-card">
-        <div class="empty-state">
-          <i data-lucide="loader-2" class="empty-icon spin"></i>
-          <p>Presiona "Escanear Ahora" para analizar los mercados de Binance y Bybit...</p>
+    <!-- Grid de Tablas (Escritorio: Lado a Lado | Móvil: Pestañas) -->
+    <div class="tables-grid">
+      <!-- Tabla 1: RSI Sobrecompra -->
+      <div id="content-rsi" class="tab-content active">
+        <div class="table-section-title">
+          <h3><i data-lucide="flame" class="text-red"></i> Pares en Sobrecompra (RSI > 70)</h3>
+        </div>
+        <div id="container-rsi-table" class="table-card">
+          <div class="empty-state">
+            <i data-lucide="loader-2" class="empty-icon spin"></i>
+            <p>Presiona "Escanear Ahora" para analizar los mercados de Binance y Bybit...</p>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Contenido Pestaña 2: Tabla EMA 3 & EMA 10 -->
-    <div id="content-ema" class="tab-content">
-      <div id="container-ema-table" class="table-card">
-        <div class="empty-state">
-          <i data-lucide="loader-2" class="empty-icon spin"></i>
-          <p>Presiona "Escanear Ahora" para analizar la distancia a las EMAs...</p>
+      <!-- Tabla 2: Distancia EMA 3 & 10 -->
+      <div id="content-ema" class="tab-content">
+        <div class="table-section-title">
+          <h3><i data-lucide="line-chart" class="text-cyan"></i> Distancia EMA 3 / EMA 10 (> 2%)</h3>
+        </div>
+        <div id="container-ema-table" class="table-card">
+          <div class="empty-state">
+            <i data-lucide="loader-2" class="empty-icon spin"></i>
+            <p>Presiona "Escanear Ahora" para analizar la distancia a las EMAs...</p>
+          </div>
         </div>
       </div>
     </div>

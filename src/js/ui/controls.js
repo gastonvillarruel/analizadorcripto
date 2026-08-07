@@ -140,7 +140,7 @@ export class ControlsManager {
 
     if (this.btnScan) {
       this.btnScan.disabled = true;
-      this.btnScan.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Escaneando...`;
+      this.btnScan.innerHTML = `<i data-lucide="loader-2" class="spin"></i>`;
       if (window.lucide) window.lucide.createIcons();
     }
   }
@@ -153,7 +153,7 @@ export class ControlsManager {
     }
     if (this.btnScan) {
       this.btnScan.disabled = false;
-      this.btnScan.innerHTML = `<i data-lucide="refresh-cw"></i> Escanear Ahora`;
+      this.btnScan.innerHTML = `<i data-lucide="refresh-cw"></i>`;
       if (window.lucide) window.lucide.createIcons();
     }
   }

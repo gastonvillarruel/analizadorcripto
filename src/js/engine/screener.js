@@ -138,7 +138,7 @@ export class ScreenerEngine {
           // A) Cálculo RSI
           const rsiVal = calculateRSI(rsiKlines, 14);
 
-          if (rsiVal !== null && rsiVal >= this.settings.rsiThreshold) {
+          if (rsiVal !== null && rsiVal >= this.settings.rsiThreshold && rsiVal < 100) {
             rsiOverboughtResults.push({
               ...pairObj,
               change1h,
@@ -173,9 +173,10 @@ export class ScreenerEngine {
               distEma10_1h.absDistancePct >= this.settings.ema10DistanceThreshold;
           }
 
-          if (meetsEma3Condition && meetsEma10Condition) {
+          if (meetsEma3Condition && meetsEma10Condition && (rsiVal === null || rsiVal < 100)) {
             emaDistanceResults.push({
               ...pairObj,
+              rsi: rsiVal,
               ema3_30m,
               distEma3_30m,
               ema10_30m,
@@ -184,6 +185,7 @@ export class ScreenerEngine {
               distEma3_1h,
               ema10_1h,
               distEma10_1h,
+              targetEma3Threshold: this.settings.ema3DistanceThreshold,
               // Distancia máxima encontrada para ordenamiento rápido
               maxDist3: Math.max(distEma3_30m.absDistancePct, distEma3_1h.absDistancePct),
               maxDist10: Math.max(distEma10_30m.absDistancePct, distEma10_1h.absDistancePct)
