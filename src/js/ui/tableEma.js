@@ -78,6 +78,11 @@ export class TableEmaManager {
 
     const filtered = this.getFilteredData();
 
+    const badgeEma = document.getElementById('stat-ema-count');
+    if (badgeEma) {
+      badgeEma.innerText = filtered.length;
+    }
+
     if (filtered.length === 0) {
       this.container.innerHTML = `
         <div class="empty-state">

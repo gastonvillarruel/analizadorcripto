@@ -4,6 +4,27 @@
 
 const BASE_URL = 'https://fapi.binance.com';
 
+export let lastBinanceError = null;
+
+/**
+ * Verfica la salud y latencia de la API de Binance Futures.
+ */
+export async function checkBinanceStatus() {
+  const start = Date.now();
+  try {
+    const res = await fetch(`${BASE_URL}/fapi/v1/ping`);
+    if (res.ok) {
+      lastBinanceError = null;
+      return { ok: true, ping: Date.now() - start, message: 'Binance Futures Online' };
+    }
+    throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    const msg = err.message === 'Failed to fetch' ? 'Bloqueo de red / CORS' : err.message;
+    lastBinanceError = msg;
+    return { ok: false, ping: 0, message: `Binance: ${msg}` };
+  }
+}
+
 /**
  * Obtiene la lista de todos los pares de futuros perpetuos USDT ordenados por volumen 24h.
  * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string}>>}
@@ -11,8 +32,9 @@ const BASE_URL = 'https://fapi.binance.com';
 export async function getBinanceSymbols() {
   try {
     const res = await fetch(`${BASE_URL}/fapi/v1/ticker/24hr`);
-    if (!res.ok) throw new Error(`Binance HTTP error: ${res.status}`);
+    if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
     const data = await res.json();
+    lastBinanceError = null;
 
     // Filtrar solo perpetuos terminados en USDT (excluir trimestrales con '_')
     const usdtPairs = data
@@ -28,7 +50,9 @@ export async function getBinanceSymbols() {
 
     return usdtPairs;
   } catch (err) {
-    console.error('Error al obtener pares de Binance:', err);
+    const msg = err.message === 'Failed to fetch' ? 'Error de red / CORS al conectar con fapi.binance.com' : err.message;
+    lastBinanceError = msg;
+    console.error('Error al obtener pares de Binance:', msg);
     return [];
   }
 }

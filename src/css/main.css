@@ -897,3 +897,67 @@ body {
     font-size: 0.85rem;
   }
 }
+
+/* API Status Indicator & Error Banner */
+.api-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  background: rgba(22, 27, 34, 0.8);
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  color: var(--text-muted);
+}
+.api-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-green);
+  display: inline-block;
+  box-shadow: 0 0 6px var(--accent-green);
+}
+.api-status-dot.error {
+  background-color: var(--accent-red);
+  box-shadow: 0 0 6px var(--accent-red);
+}
+.api-status-dot.warning {
+  background-color: var(--accent-orange);
+  box-shadow: 0 0 6px var(--accent-orange);
+}
+
+.api-error-banner {
+  background: rgba(255, 51, 102, 0.12);
+  border: 1px solid rgba(255, 51, 102, 0.4);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 1.2rem;
+  color: #ff809b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  backdrop-filter: blur(8px);
+}
+.api-error-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.api-error-banner-content i {
+  font-size: 1.2rem;
+  color: var(--accent-red);
+  flex-shrink: 0;
+}
+.api-error-banner-text h5 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #fff;
+}
+.api-error-banner-text p {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.8rem;
+  color: #ffb3c1;
+}
+

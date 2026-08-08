@@ -1,6 +1,7 @@
-import { getBinanceSymbols, getBinanceKlines } from '../api/binance.js';
-import { getBybitSymbols, getBybitKlines } from '../api/bybit.js';
+import { getBinanceSymbols, getBinanceKlines, lastBinanceError, checkBinanceStatus } from '../api/binance.js';
+import { getBybitSymbols, getBybitKlines, lastBybitError, checkBybitStatus } from '../api/bybit.js';
 import { calculateRSI, calculateEMA, calculateEmaDistance } from '../utils/indicators.js';
+import { isTokenizedStock } from '../utils/stockFilter.js';
 
 export class ScreenerEngine {
   constructor() {
@@ -13,6 +14,7 @@ export class ScreenerEngine {
       ema10DistanceThreshold: 1.0,// Umbral % para EMA 10
       limitPairs: 200,            // Top N por volumen en 24h (50, 100, 200, 0=todos)
       autoRefreshInterval: 60,    // Segundos (60 = 1 min)
+      excludeTokenizedStocks: true,// Excluir acciones tokenizadas/TradFi (TSLA, PANW, etc.)
       soundAlerts: false
     };
 
@@ -34,6 +36,14 @@ export class ScreenerEngine {
       emaDistance: [],
       totalAnalyzed: 0
     };
+  }
+
+  async checkApiHealth() {
+    const [binance, bybit] = await Promise.all([
+      checkBinanceStatus(),
+      checkBybitStatus()
+    ]);
+    return { binance, bybit };
   }
 
   on(event, callback) {
@@ -100,9 +110,23 @@ export class ScreenerEngine {
         symbols.push(...bybitList.slice(0, limit));
       }
 
+      if (this.settings.excludeTokenizedStocks) {
+        symbols = symbols.filter(item => !isTokenizedStock(item.symbol));
+      }
+
       const totalSymbols = symbols.length;
       if (totalSymbols === 0) {
-        throw new Error('No se pudieron obtener pares de futuros.');
+        let errDetails = [];
+        if (this.settings.exchange === 'binance' || this.settings.exchange === 'all') {
+          if (lastBinanceError) errDetails.push(`Binance: ${lastBinanceError}`);
+        }
+        if (this.settings.exchange === 'bybit' || this.settings.exchange === 'all') {
+          if (lastBybitError) errDetails.push(`Bybit: ${lastBybitError}`);
+        }
+        const fullMsg = errDetails.length > 0 
+          ? `No se pudieron obtener pares (${errDetails.join(' | ')})` 
+          : 'No se pudieron obtener pares de futuros. Revisa la conexión o restricciones CORS.';
+        throw new Error(fullMsg);
       }
 
       this.emit('onProgress', { processed: 0, total: totalSymbols, pair: 'Iniciando escaneo...' });
@@ -115,6 +139,10 @@ export class ScreenerEngine {
 
       const processPair = async (pairObj) => {
         try {
+          if (!pairObj.price || pairObj.price <= 0 || !pairObj.volume24h || pairObj.volume24h <= 0) {
+            return;
+          }
+
           const fetchKlines = pairObj.exchange === 'binance' ? getBinanceKlines : getBybitKlines;
 
           // Descargar klines requeridos en paralelo
@@ -123,6 +151,8 @@ export class ScreenerEngine {
             fetchKlines(pairObj.symbol, '30m', 40),
             fetchKlines(pairObj.symbol, '1h', 40)
           ]);
+
+          if (!rsiKlines || rsiKlines.length < 14) return;
 
           const currentPrice = pairObj.price;
 
@@ -138,7 +168,10 @@ export class ScreenerEngine {
           // A) Cálculo RSI
           const rsiVal = calculateRSI(rsiKlines, 14);
 
-          if (rsiVal !== null && rsiVal >= this.settings.rsiThreshold && rsiVal < 100) {
+          // Excluir pares deslistados o sin volatilidad donde RSI da 100 o null
+          const isValidActiveRsi = rsiVal !== null && rsiVal < 99.99 && rsiVal > 0;
+
+          if (isValidActiveRsi && rsiVal >= this.settings.rsiThreshold) {
             rsiOverboughtResults.push({
               ...pairObj,
               change1h,
@@ -173,7 +206,7 @@ export class ScreenerEngine {
               distEma10_1h.absDistancePct >= this.settings.ema10DistanceThreshold;
           }
 
-          if (meetsEma3Condition && meetsEma10Condition && (rsiVal === null || rsiVal < 100)) {
+          if (isValidActiveRsi && meetsEma3Condition && meetsEma10Condition) {
             emaDistanceResults.push({
               ...pairObj,
               rsi: rsiVal,

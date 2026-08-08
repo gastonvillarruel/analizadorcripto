@@ -61,6 +61,11 @@ export class TableRsiManager {
 
     const filtered = this.getFilteredData();
 
+    const badgeRsi = document.getElementById('stat-rsi-count');
+    if (badgeRsi) {
+      badgeRsi.innerText = filtered.length;
+    }
+
     if (filtered.length === 0) {
       this.container.innerHTML = `
         <div class="empty-state">

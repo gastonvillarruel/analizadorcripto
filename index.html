@@ -19,6 +19,11 @@
     </div>
 
     <div class="header-controls">
+      <div id="api-status-badge" class="api-status-badge" title="Estado de la conexión a las APIs">
+        <span id="api-status-dot" class="api-status-dot"></span>
+        <span id="api-status-text">Comprobando APIs...</span>
+      </div>
+
       <div class="timer-box" title="Próximo escaneo automático">
         <i data-lucide="clock"></i>
         <strong id="timer-countdown">01:00</strong>
@@ -36,6 +41,20 @@
 
   <!-- Layout Principal -->
   <main class="app-container">
+
+    <!-- Banner de Error de API / Red -->
+    <div id="api-error-banner" class="api-error-banner" style="display: none;">
+      <div class="api-error-banner-content">
+        <i data-lucide="alert-triangle"></i>
+        <div class="api-error-banner-text">
+          <h5 id="api-error-title">Error de Conexión a la API</h5>
+          <p id="api-error-message">No se pudo contactar al servidor. Revisa tu conexión o la configuración.</p>
+        </div>
+      </div>
+      <button id="btn-retry-scan" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+        Reintentar
+      </button>
+    </div>
 
     <!-- Tarjetas de Estadísticas Resumen -->
     <section class="stats-grid">
@@ -181,6 +200,13 @@
             <option value="200" selected>Top 200 Pares por Volumen</option>
             <option value="0">Todos los Pares USDT Perpetuos</option>
           </select>
+        </div>
+
+        <div class="form-group">
+          <label class="checkbox-group">
+            <input type="checkbox" id="setting-exclude-stocks" checked>
+            <span>Excluir Acciones Tokenizadas y TradFi (TSLA, PANW, AAPL, etc.)</span>
+          </label>
         </div>
 
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">

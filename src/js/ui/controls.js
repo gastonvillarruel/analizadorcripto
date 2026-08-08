@@ -28,6 +28,14 @@ export class ControlsManager {
     this.badgeEmaCount = document.getElementById('stat-ema-count');
     this.lastUpdatedText = document.getElementById('last-updated-text');
 
+    // Elementos de estado de API y banners
+    this.apiStatusDot = document.getElementById('api-status-dot');
+    this.apiStatusText = document.getElementById('api-status-text');
+    this.apiErrorBanner = document.getElementById('api-error-banner');
+    this.apiErrorTitle = document.getElementById('api-error-title');
+    this.apiErrorMessage = document.getElementById('api-error-message');
+    this.btnRetryScan = document.getElementById('btn-retry-scan');
+
     // Elementos de formulario en modal
     this.inputRefresh = document.getElementById('setting-refresh');
     this.selectExchange = document.getElementById('setting-exchange');
@@ -37,6 +45,7 @@ export class ControlsManager {
     this.inputEma3Threshold = document.getElementById('setting-ema3-threshold');
     this.toggleEma10 = document.getElementById('setting-ema10-toggle');
     this.inputEma10Threshold = document.getElementById('setting-ema10-threshold');
+    this.toggleExcludeStocks = document.getElementById('setting-exclude-stocks');
   }
 
   loadSavedSettings() {
@@ -62,12 +71,22 @@ export class ControlsManager {
     if (this.inputEma3Threshold) this.inputEma3Threshold.value = s.ema3DistanceThreshold;
     if (this.toggleEma10) this.toggleEma10.checked = s.ema10FilterActive;
     if (this.inputEma10Threshold) this.inputEma10Threshold.value = s.ema10DistanceThreshold;
+    if (this.toggleExcludeStocks) this.toggleExcludeStocks.checked = s.excludeTokenizedStocks !== false;
   }
 
   bindEvents() {
     // Botón de escaneo manual
     if (this.btnScan) {
       this.btnScan.addEventListener('click', () => {
+        this.hideErrorBanner();
+        this.engine.runScan();
+      });
+    }
+
+    // Botón de reintento en banner de error
+    if (this.btnRetryScan) {
+      this.btnRetryScan.addEventListener('click', () => {
+        this.hideErrorBanner();
         this.engine.runScan();
       });
     }
@@ -98,6 +117,7 @@ export class ControlsManager {
           ema3DistanceThreshold: parseFloat(this.inputEma3Threshold.value) || 2.0,
           ema10FilterActive: this.toggleEma10.checked,
           ema10DistanceThreshold: parseFloat(this.inputEma10Threshold.value) || 1.0,
+          excludeTokenizedStocks: this.toggleExcludeStocks ? this.toggleExcludeStocks.checked : true,
           soundAlerts: false
         };
 
@@ -106,18 +126,29 @@ export class ControlsManager {
         this.modalSettings.classList.remove('active');
 
         // Reiniciar escaneo con los nuevos parámetros
+        this.hideErrorBanner();
         this.engine.runScan();
       });
     }
 
     // Eventos del Screener Engine
     this.engine.on('onProgress', (p) => {
+      this.hideErrorBanner();
       this.updateProgress(p.processed, p.total, p.pair);
     });
 
     this.engine.on('onComplete', (res) => {
       this.finishProgress();
       this.updateStats(res);
+      this.hideErrorBanner();
+    });
+
+    this.engine.on('onError', (errMsg) => {
+      this.finishProgress();
+      this.showErrorBanner('Error durante el escaneo', errMsg);
+      if (this.lastUpdatedText) {
+        this.lastUpdatedText.innerHTML = `<span style="color: var(--accent-red)">❌ Error de red / API</span>`;
+      }
     });
 
     this.engine.on('onCountdown', (seconds) => {
@@ -127,6 +158,41 @@ export class ControlsManager {
         this.timerCountdown.innerText = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
       }
     });
+  }
+
+  showErrorBanner(title, message) {
+    if (this.apiErrorBanner) {
+      if (this.apiErrorTitle) this.apiErrorTitle.innerText = title;
+      if (this.apiErrorMessage) this.apiErrorMessage.innerText = message;
+      this.apiErrorBanner.style.display = 'flex';
+      if (window.lucide) window.lucide.createIcons();
+    }
+  }
+
+  hideErrorBanner() {
+    if (this.apiErrorBanner) {
+      this.apiErrorBanner.style.display = 'none';
+    }
+  }
+
+  updateApiStatusBadge(health) {
+    if (!this.apiStatusText || !this.apiStatusDot) return;
+
+    const bOk = health.binance && health.binance.ok;
+    const yOk = health.bybit && health.bybit.ok;
+
+    if (bOk && yOk) {
+      this.apiStatusDot.className = 'api-status-dot';
+      this.apiStatusText.innerText = 'Binance & Bybit Online';
+    } else if (bOk || yOk) {
+      this.apiStatusDot.className = 'api-status-dot warning';
+      const okName = bOk ? 'Binance' : 'Bybit';
+      const errName = bOk ? 'Bybit' : 'Binance';
+      this.apiStatusText.innerText = `${okName} OK (${errName} caído/CORS)`;
+    } else {
+      this.apiStatusDot.className = 'api-status-dot error';
+      this.apiStatusText.innerText = 'Error de API / CORS';
+    }
   }
 
   updateProgress(processed, total, currentPair) {

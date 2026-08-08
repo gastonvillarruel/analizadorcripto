@@ -17,6 +17,27 @@ const INTERVAL_MAP = {
   '4h': '240'
 };
 
+export let lastBybitError = null;
+
+/**
+ * Verifica la salud y latencia de la API de Bybit Linear V5.
+ */
+export async function checkBybitStatus() {
+  const start = Date.now();
+  try {
+    const res = await fetch(`${BASE_URL}/v5/market/time`);
+    if (res.ok) {
+      lastBybitError = null;
+      return { ok: true, ping: Date.now() - start, message: 'Bybit Linear Online' };
+    }
+    throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    const msg = err.message === 'Failed to fetch' ? 'Bloqueo de red / CORS' : err.message;
+    lastBybitError = msg;
+    return { ok: false, ping: 0, message: `Bybit: ${msg}` };
+  }
+}
+
 /**
  * Obtiene los pares de futuros perpetuos USDT de Bybit ordenados por volumen 24h.
  * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string}>>}
@@ -30,6 +51,8 @@ export async function getBybitSymbols() {
     if (json.retCode !== 0 || !json.result || !json.result.list) {
       throw new Error(`Bybit API Error Code: ${json.retCode}`);
     }
+
+    lastBybitError = null;
 
     const usdtPairs = json.result.list
       .filter(item => item.symbol.endsWith('USDT'))
@@ -45,7 +68,9 @@ export async function getBybitSymbols() {
 
     return usdtPairs;
   } catch (err) {
-    console.error('Error al obtener pares de Bybit:', err);
+    const msg = err.message === 'Failed to fetch' ? 'Error de red / CORS al conectar con api.bybit.com' : err.message;
+    lastBybitError = msg;
+    console.error('Error al obtener pares de Bybit:', msg);
     return [];
   }
 }

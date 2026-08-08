@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 2. Vincular resultados del escáner a las tablas y calcular coincidencia (confluencia)
   engine.on('onComplete', (res) => {
-    const rsiList = (res.rsiOverbought || []).filter(item => item.rsi < 100);
-    const emaList = (res.emaDistance || []).filter(item => item.rsi === undefined || item.rsi === null || item.rsi < 100);
+    const rsiList = (res.rsiOverbought || []).filter(item => item.rsi !== null && item.rsi !== undefined && item.rsi < 99.99);
+    const emaList = (res.emaDistance || []).filter(item => item.rsi !== null && item.rsi !== undefined && item.rsi < 99.99);
 
     const rsiKeys = new Set(rsiList.map(i => `${i.symbol}_${i.exchange}`));
     const emaKeys = new Set(emaList.map(i => `${i.symbol}_${i.exchange}`));
@@ -65,7 +65,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Iniciar primer escaneo automático y temporizador
+  // 6. Verificación de Salud de APIs y primer escaneo
+  const refreshApiHealth = async () => {
+    try {
+      const health = await engine.checkApiHealth();
+      controls.updateApiStatusBadge(health);
+    } catch (e) {
+      console.warn('Error al verificar APIs:', e);
+    }
+  };
+
+  refreshApiHealth();
+
+  engine.on('onComplete', () => {
+    refreshApiHealth();
+  });
+
+  engine.on('onError', () => {
+    refreshApiHealth();
+  });
+
   engine.startAutoRefresh();
   engine.runScan();
 
