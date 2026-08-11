@@ -24,6 +24,17 @@
         <span id="api-status-text">Comprobando APIs...</span>
       </div>
 
+      <!-- Indicador Sutil de Progreso de Análisis -->
+      <div id="scan-progress-indicator" class="scan-progress-indicator" title="Analizando mercados..." style="display: none;">
+        <div class="progress-spinner-wrapper">
+          <svg class="progress-spinner" viewBox="0 0 24 24">
+            <circle class="spinner-bg" cx="12" cy="12" r="9" />
+            <circle id="progress-circle-fill" class="spinner-fill" cx="12" cy="12" r="9" stroke-dasharray="56.55" stroke-dashoffset="56.55" />
+          </svg>
+        </div>
+        <span id="progress-mini-text" class="progress-mini-text font-mono">0%</span>
+      </div>
+
       <div class="timer-box" title="Próximo escaneo automático">
         <i data-lucide="clock"></i>
         <strong id="timer-countdown">01:00</strong>
@@ -99,18 +110,7 @@
       </div>
     </section>
 
-    <!-- Barra de Progreso de Escaneo -->
-    <div id="progress-bar" class="progress-container">
-      <div class="progress-header">
-        <span id="progress-text" class="font-bold">Iniciando escaneo...</span>
-        <span id="progress-pair" class="font-mono text-muted">BTCUSDT</span>
-      </div>
-      <div class="progress-track">
-        <div id="progress-fill" class="progress-fill"></div>
-      </div>
-    </div>
-
-    <!-- Navegación por Pestañas y Filtros -->
+    <!-- Navegación por Pestañas -->
     <section class="section-header">
       <nav class="tabs-nav">
         <button id="tab-rsi" class="tab-btn active">
@@ -120,17 +120,6 @@
           <i data-lucide="line-chart"></i> Distancia EMA 3 / EMA 10 (> 2%)
         </button>
       </nav>
-
-      <div class="filter-bar">
-        <!-- Filtro adicional de dirección para la tabla EMA -->
-        <div id="ema-direction-wrapper">
-          <select id="filter-ema-direction" class="form-control" style="font-size: 0.85rem; padding: 0.4rem 0.6rem;">
-            <option value="above" selected>Precio Sobre EMA (Pump)</option>
-            <option value="all">Ver Todas las Tendencias</option>
-            <option value="below">Precio Bajo EMA (Dump)</option>
-          </select>
-        </div>
-      </div>
     </section>
 
     <!-- Grid de Tablas (Escritorio: Lado a Lado | Móvil: Pestañas) -->
@@ -233,6 +222,15 @@
         <div class="form-group">
           <label for="setting-ema3-threshold">Distancia Mínima a EMA 3 (%) en 30m y 1h</label>
           <input type="number" id="setting-ema3-threshold" class="form-control" value="2.0" min="0.5" max="20" step="0.1">
+        </div>
+
+        <div class="form-group">
+          <label for="filter-ema-direction">Filtro de Tendencias (EMA)</label>
+          <select id="filter-ema-direction" class="form-control">
+            <option value="above" selected>Precio Sobre EMA (Pump)</option>
+            <option value="all">Ver Todas las Tendencias</option>
+            <option value="below">Precio Bajo EMA (Dump)</option>
+          </select>
         </div>
 
         <div class="form-group">

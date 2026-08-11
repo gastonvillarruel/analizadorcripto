@@ -17,10 +17,9 @@ export class ControlsManager {
     this.btnCloseModal = document.getElementById('btn-close-modal');
     this.btnSaveSettings = document.getElementById('btn-save-settings');
 
-    this.progressBar = document.getElementById('progress-bar');
-    this.progressFill = document.getElementById('progress-fill');
-    this.progressText = document.getElementById('progress-text');
-    this.progressPair = document.getElementById('progress-pair');
+    this.scanProgressIndicator = document.getElementById('scan-progress-indicator');
+    this.progressCircleFill = document.getElementById('progress-circle-fill');
+    this.progressMiniText = document.getElementById('progress-mini-text');
 
     this.timerCountdown = document.getElementById('timer-countdown');
     this.badgeTotalAnalyzed = document.getElementById('stat-total-analyzed');
@@ -43,6 +42,7 @@ export class ControlsManager {
     this.inputRsiThreshold = document.getElementById('setting-rsi-threshold');
     this.selectRsiTimeframe = document.getElementById('setting-rsi-tf');
     this.inputEma3Threshold = document.getElementById('setting-ema3-threshold');
+    this.selectEmaDirection = document.getElementById('filter-ema-direction');
     this.toggleEma10 = document.getElementById('setting-ema10-toggle');
     this.inputEma10Threshold = document.getElementById('setting-ema10-threshold');
     this.toggleExcludeStocks = document.getElementById('setting-exclude-stocks');
@@ -69,6 +69,7 @@ export class ControlsManager {
     if (this.inputRsiThreshold) this.inputRsiThreshold.value = s.rsiThreshold;
     if (this.selectRsiTimeframe) this.selectRsiTimeframe.value = s.rsiTimeframe;
     if (this.inputEma3Threshold) this.inputEma3Threshold.value = s.ema3DistanceThreshold;
+    if (this.selectEmaDirection && s.emaDirection) this.selectEmaDirection.value = s.emaDirection;
     if (this.toggleEma10) this.toggleEma10.checked = s.ema10FilterActive;
     if (this.inputEma10Threshold) this.inputEma10Threshold.value = s.ema10DistanceThreshold;
     if (this.toggleExcludeStocks) this.toggleExcludeStocks.checked = s.excludeTokenizedStocks !== false;
@@ -118,11 +119,15 @@ export class ControlsManager {
           ema10FilterActive: this.toggleEma10.checked,
           ema10DistanceThreshold: parseFloat(this.inputEma10Threshold.value) || 1.0,
           excludeTokenizedStocks: this.toggleExcludeStocks ? this.toggleExcludeStocks.checked : true,
+          emaDirection: this.selectEmaDirection ? this.selectEmaDirection.value : 'above',
           soundAlerts: false
         };
 
         localStorage.setItem('crypto_screener_settings', JSON.stringify(newSettings));
         this.engine.updateSettings(newSettings);
+        if (this.selectEmaDirection) {
+          this.selectEmaDirection.dispatchEvent(new Event('change'));
+        }
         this.modalSettings.classList.remove('active');
 
         // Reiniciar escaneo con los nuevos parámetros
@@ -196,13 +201,20 @@ export class ControlsManager {
   }
 
   updateProgress(processed, total, currentPair) {
-    if (!this.progressBar) return;
-    this.progressBar.style.display = 'block';
+    if (!this.scanProgressIndicator) return;
+    this.scanProgressIndicator.style.display = 'flex';
 
     const pct = Math.round((processed / total) * 100);
-    this.progressFill.style.width = `${pct}%`;
-    this.progressText.innerText = `Analizando mercado: ${processed}/${total} pares (${pct}%)`;
-    this.progressPair.innerText = currentPair || '';
+    const circumference = 56.55;
+    const offset = circumference - (pct / 100) * circumference;
+
+    if (this.progressCircleFill) {
+      this.progressCircleFill.style.strokeDashoffset = offset;
+    }
+    if (this.progressMiniText) {
+      this.progressMiniText.innerText = `${pct}%`;
+    }
+    this.scanProgressIndicator.title = `Analizando mercado: ${processed}/${total} ${currentPair ? `(${currentPair})` : ''}`;
 
     if (this.btnScan) {
       this.btnScan.disabled = true;
@@ -212,10 +224,10 @@ export class ControlsManager {
   }
 
   finishProgress() {
-    if (this.progressBar) {
+    if (this.scanProgressIndicator) {
       setTimeout(() => {
-        this.progressBar.style.display = 'none';
-      }, 800);
+        this.scanProgressIndicator.style.display = 'none';
+      }, 600);
     }
     if (this.btnScan) {
       this.btnScan.disabled = false;

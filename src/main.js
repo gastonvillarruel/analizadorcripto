@@ -29,14 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabEma = document.getElementById('tab-ema');
   const contentRsi = document.getElementById('content-rsi');
   const contentEma = document.getElementById('content-ema');
-  const emaDirectionWrapper = document.getElementById('ema-direction-wrapper');
 
   tabRsi.addEventListener('click', () => {
     tabRsi.classList.add('active');
     tabEma.classList.remove('active');
     contentRsi.classList.add('active');
     contentEma.classList.remove('active');
-    emaDirectionWrapper.style.display = 'none';
   });
 
   tabEma.addEventListener('click', () => {
@@ -44,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     tabRsi.classList.remove('active');
     contentEma.classList.add('active');
     contentRsi.classList.remove('active');
-    emaDirectionWrapper.style.display = 'block';
   });
 
   // 4. Búsqueda en tiempo real
@@ -57,9 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 5. Filtro de dirección para la tabla EMA
+  // 5. Filtro de dirección para la tabla EMA (desde Configuración)
   const filterEmaDir = document.getElementById('filter-ema-direction');
   if (filterEmaDir) {
+    tableEma.setDirectionFilter(filterEmaDir.value);
     filterEmaDir.addEventListener('change', (e) => {
       tableEma.setDirectionFilter(e.target.value);
     });
