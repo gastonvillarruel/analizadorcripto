@@ -38,13 +38,39 @@ export async function checkBybitStatus() {
   }
 }
 
+let bybitInstrumentsCache = null;
+
+async function getBybitInstrumentsMap() {
+  if (bybitInstrumentsCache) return bybitInstrumentsCache;
+  try {
+    const res = await fetch(`${BASE_URL}/v5/market/instruments-info?category=linear`);
+    if (res.ok) {
+      const json = await res.json();
+      if (json.retCode === 0 && json.result && json.result.list) {
+        const map = {};
+        json.result.list.forEach(i => {
+          map[i.symbol] = i.symbolType || '';
+        });
+        bybitInstrumentsCache = map;
+        return map;
+      }
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar instruments-info de Bybit para metadatos:', e);
+  }
+  return {};
+}
+
 /**
  * Obtiene los pares de futuros perpetuos USDT de Bybit ordenados por volumen 24h.
- * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string}>>}
+ * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string, symbolType?: string}>>}
  */
 export async function getBybitSymbols() {
   try {
-    const res = await fetch(`${BASE_URL}/v5/market/tickers?category=linear`);
+    const [res, instrumentsMap] = await Promise.all([
+      fetch(`${BASE_URL}/v5/market/tickers?category=linear`),
+      getBybitInstrumentsMap()
+    ]);
     if (!res.ok) throw new Error(`Bybit HTTP error: ${res.status}`);
     const json = await res.json();
 
@@ -62,7 +88,8 @@ export async function getBybitSymbols() {
         // price24hPcnt viene en decimal (ej. 0.035 -> 3.5%)
         change24h: parseFloat((parseFloat(item.price24hPcnt || 0) * 100).toFixed(2)),
         volume24h: parseFloat(item.turnover24h || 0),
-        exchange: 'bybit'
+        exchange: 'bybit',
+        symbolType: instrumentsMap[item.symbol] || ''
       }))
       .sort((a, b) => b.volume24h - a.volume24h);
 

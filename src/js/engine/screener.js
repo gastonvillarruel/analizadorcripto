@@ -111,7 +111,7 @@ export class ScreenerEngine {
       }
 
       if (this.settings.excludeTokenizedStocks) {
-        symbols = symbols.filter(item => !isTokenizedStock(item.symbol));
+        symbols = symbols.filter(item => !isTokenizedStock(item));
       }
 
       const totalSymbols = symbols.length;

@@ -25,13 +25,37 @@ export async function checkBinanceStatus() {
   }
 }
 
+let binanceExchangeInfoCache = null;
+
+async function getBinanceExchangeInfoMap() {
+  if (binanceExchangeInfoCache) return binanceExchangeInfoCache;
+  try {
+    const res = await fetch(`${BASE_URL}/fapi/v1/exchangeInfo`);
+    if (res.ok) {
+      const data = await res.json();
+      const map = {};
+      (data.symbols || []).forEach(s => {
+        map[s.symbol] = s.underlyingType || 'COIN';
+      });
+      binanceExchangeInfoCache = map;
+      return map;
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar exchangeInfo de Binance para metadatos:', e);
+  }
+  return {};
+}
+
 /**
  * Obtiene la lista de todos los pares de futuros perpetuos USDT ordenados por volumen 24h.
- * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string}>>}
+ * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string, underlyingType?: string}>>}
  */
 export async function getBinanceSymbols() {
   try {
-    const res = await fetch(`${BASE_URL}/fapi/v1/ticker/24hr`);
+    const [res, infoMap] = await Promise.all([
+      fetch(`${BASE_URL}/fapi/v1/ticker/24hr`),
+      getBinanceExchangeInfoMap()
+    ]);
     if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
     const data = await res.json();
     lastBinanceError = null;
@@ -44,7 +68,8 @@ export async function getBinanceSymbols() {
         price: parseFloat(item.lastPrice),
         change24h: parseFloat(item.priceChangePercent),
         volume24h: parseFloat(item.quoteVolume),
-        exchange: 'binance'
+        exchange: 'binance',
+        underlyingType: infoMap[item.symbol] || 'COIN'
       }))
       .sort((a, b) => b.volume24h - a.volume24h);
 
