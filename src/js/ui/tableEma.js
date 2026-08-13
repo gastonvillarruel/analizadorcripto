@@ -161,8 +161,8 @@ export class TableEmaManager {
           <td class="col-status">${statusBadge}</td>
           <td class="text-right">
             <div class="action-buttons">
-              <a href="${getTradingViewUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-tv" title="Gráfico en TradingView">
-                <i data-lucide="line-chart"></i>
+              <a href="${getExchangeUrl(item.exchange, item.symbol)}" target="_blank" class="btn-icon btn-tv" title="Ver en Exchange">
+                <i data-lucide="external-link"></i>
               </a>
             </div>
           </td>
