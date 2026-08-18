@@ -5,14 +5,36 @@
 const BASE_URL = 'https://fapi.binance.com';
 
 export let lastBinanceError = null;
+export let binanceUsedWeight = 0;
+export let binanceBanUntil = 0;
+
+export function updateRateLimitHeaders(res) {
+  if (!res) return;
+  const weight = res.headers.get('x-mbx-used-weight-1m') || res.headers.get('x-mbx-used-weight');
+  if (weight) {
+    binanceUsedWeight = parseInt(weight, 10);
+  }
+
+  if (res.status === 429 || res.status === 418) {
+    const retryAfter = res.headers.get('retry-after');
+    const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : 60;
+    binanceBanUntil = Date.now() + (waitSeconds * 1000);
+    lastBinanceError = `IP bloqueada temporalmente por Binance (HTTP ${res.status}). Reanudando en ${waitSeconds}s.`;
+  }
+}
 
 /**
  * Verfica la salud y latencia de la API de Binance Futures.
  */
 export async function checkBinanceStatus() {
+  if (Date.now() < binanceBanUntil) {
+    const remaining = Math.ceil((binanceBanUntil - Date.now()) / 1000);
+    return { ok: false, ping: 0, message: `Binance: En pausa por rate limit (${remaining}s)` };
+  }
   const start = Date.now();
   try {
     const res = await fetch(`${BASE_URL}/fapi/v1/ping`);
+    updateRateLimitHeaders(res);
     if (res.ok) {
       lastBinanceError = null;
       return { ok: true, ping: Date.now() - start, message: 'Binance Futures Online' };
@@ -51,11 +73,17 @@ async function getBinanceExchangeInfoMap() {
  * @returns {Promise<Array<{symbol: string, price: number, change24h: number, volume24h: number, exchange: string, underlyingType?: string}>>}
  */
 export async function getBinanceSymbols() {
+  if (Date.now() < binanceBanUntil) {
+    const remaining = Math.ceil((binanceBanUntil - Date.now()) / 1000);
+    lastBinanceError = `Binance en pausa por rate limit (${remaining}s restantes)`;
+    return [];
+  }
   try {
     const [res, infoMap] = await Promise.all([
       fetch(`${BASE_URL}/fapi/v1/ticker/24hr`),
       getBinanceExchangeInfoMap()
     ]);
+    updateRateLimitHeaders(res);
     if (!res.ok) throw new Error(`Binance HTTP ${res.status}`);
     const data = await res.json();
     lastBinanceError = null;
@@ -90,8 +118,10 @@ export async function getBinanceSymbols() {
  * @returns {Promise<number[]>} Array de precios de cierre (de más antiguo a más reciente)
  */
 export async function getBinanceKlines(symbol, interval, limit = 50) {
+  if (Date.now() < binanceBanUntil) return [];
   try {
     const res = await fetch(`${BASE_URL}/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+    updateRateLimitHeaders(res);
     if (!res.ok) throw new Error(`Binance Klines error: ${res.status}`);
     const data = await res.json();
     // data structure: [ openTime, open, high, low, close, volume, ... ]

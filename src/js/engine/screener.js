@@ -1,4 +1,4 @@
-import { getBinanceSymbols, getBinanceKlines, lastBinanceError, checkBinanceStatus } from '../api/binance.js';
+import { getBinanceSymbols, getBinanceKlines, lastBinanceError, checkBinanceStatus, binanceUsedWeight, binanceBanUntil } from '../api/binance.js';
 import { getBybitSymbols, getBybitKlines, lastBybitError, checkBybitStatus } from '../api/bybit.js';
 import { calculateRSI, calculateEMA, calculateEmaDistance } from '../utils/indicators.js';
 import { isTokenizedStock } from '../utils/stockFilter.js';
@@ -135,11 +135,15 @@ export class ScreenerEngine {
       const emaDistanceResults = [];
 
       let processedCount = 0;
-      const CONCURRENCY = 8; // Máximo 8 descargas simultáneas para evitar rate limits
+      const CONCURRENCY = 4; // Concurrencia reducida a 4 para prevenir saturación de IP
 
       const processPair = async (pairObj) => {
         try {
           if (!pairObj.price || pairObj.price <= 0 || !pairObj.volume24h || pairObj.volume24h <= 0) {
+            return;
+          }
+
+          if (pairObj.exchange === 'binance' && Date.now() < binanceBanUntil) {
             return;
           }
 
@@ -236,12 +240,17 @@ export class ScreenerEngine {
         }
       };
 
-      // Throttling pool
+      // Throttling pool con delay adaptativo
       const queue = [...symbols];
       const workers = Array(CONCURRENCY).fill(null).map(async () => {
         while (queue.length > 0) {
           const item = queue.shift();
-          if (item) await processPair(item);
+          if (item) {
+            await processPair(item);
+            // Delay adaptativo entre pares para prevenir ráfagas contra la API
+            const delay = (item.exchange === 'binance' && binanceUsedWeight > 900) ? 150 : 35;
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
       });
 
