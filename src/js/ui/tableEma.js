@@ -133,8 +133,8 @@ export class TableEmaManager {
         return `<span class="badge ${badgeClass}${dimmedClass} font-mono font-bold">${sign}${distObj.distancePct}%</span>`;
       };
 
-      // Estado general: ¿Disparado por encima o descolgado por debajo? (solo icono sin letras)
-      const primaryDir = item.distEma3_30m.direction === 'above' ? 'above' : 'below';
+      // Estado general: ¿Disparado por encima o descolgado por debajo? Basado en temporalidad mayor (1h)
+      const primaryDir = (item.distEma3_1h ? item.distEma3_1h.direction : item.distEma3_30m.direction) === 'above' ? 'above' : 'below';
       const statusBadge = primaryDir === 'above'
         ? `<span class="badge badge-bullish" title="Sobre EMA (Pump)"><i data-lucide="trending-up"></i></span>`
         : `<span class="badge badge-bearish" title="Bajo EMA (Dump)"><i data-lucide="trending-down"></i></span>`;
