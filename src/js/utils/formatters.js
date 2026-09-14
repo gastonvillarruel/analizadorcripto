@@ -56,7 +56,7 @@ export function formatPercent(pct) {
  */
 export function getExchangeUrl(exchange, symbol) {
   if (exchange === 'binance') {
-    return `https://finandy.com/es/terminal?menu=trading&stock=binance&market=futures&s=${symbol}`;
+    return `https://www.binance.com/es-AR/futures/${symbol}`;
   } else {
     return `https://www.bybit.com/en/trade/usdt/${symbol}`;
   }
