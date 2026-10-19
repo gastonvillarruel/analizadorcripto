@@ -43,17 +43,23 @@ let bybitInstrumentsCache = null;
 async function getBybitInstrumentsMap() {
   if (bybitInstrumentsCache) return bybitInstrumentsCache;
   try {
-    const res = await fetch(`${BASE_URL}/v5/market/instruments-info?category=linear`);
-    if (res.ok) {
+    const map = {};
+    let cursor = '';
+    do {
+      const url = `${BASE_URL}/v5/market/instruments-info?category=linear&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+      const res = await fetch(url);
+      if (!res.ok) break;
       const json = await res.json();
-      if (json.retCode === 0 && json.result && json.result.list) {
-        const map = {};
-        json.result.list.forEach(i => {
-          map[i.symbol] = i.symbolType || '';
-        });
-        bybitInstrumentsCache = map;
-        return map;
-      }
+      if (json.retCode !== 0 || !json.result || !json.result.list) break;
+      json.result.list.forEach(i => {
+        map[i.symbol] = i.symbolType || '';
+      });
+      cursor = json.result.nextPageCursor || '';
+    } while (cursor);
+
+    if (Object.keys(map).length > 0) {
+      bybitInstrumentsCache = map;
+      return map;
     }
   } catch (e) {
     console.warn('No se pudo cargar instruments-info de Bybit para metadatos:', e);
