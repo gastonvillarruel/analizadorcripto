@@ -901,7 +901,6 @@ body {
 
   /* Ocultar columnas específicas en móvil para máximo aprovechamiento del ancho */
   .col-exchange,
-  .col-change1h,
   .col-rsi,
   .btn-exchange {
     display: none !important;

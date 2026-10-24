@@ -89,7 +89,7 @@ export class TableRsiManager {
             <tr>
               <th class="col-exchange">Exc</th>
               <th class="sortable" id="sort-rsi-symbol">Par ${sortIcon('symbol')}</th>
-              <th class="sortable col-change1h" id="sort-rsi-change1h">1h ${sortIcon('change1h')}</th>
+              <th class="sortable" id="sort-rsi-change1h">1h ${sortIcon('change1h')}</th>
               <th class="sortable" id="sort-rsi-change24h">24h ${sortIcon('change24h')}</th>
               <th class="sortable col-rsi" id="sort-rsi-val">RSI (${filtered[0]?.rsiTimeframe || '5m'}) ${sortIcon('rsi')}</th>
               <th class="text-right">Ver</th>
@@ -122,7 +122,7 @@ export class TableRsiManager {
               ${confluenceBadge}
             </div>
           </td>
-          <td class="font-mono font-bold ${change1hClass} col-change1h">${formatPercent(item.change1h)}</td>
+          <td class="font-mono font-bold ${change1hClass}">${formatPercent(item.change1h)}</td>
           <td class="font-mono font-bold ${change24hClass}">${formatPercent(item.change24h)}</td>
           <td class="col-rsi">
             <span class="badge ${rsiClass} font-mono font-bold">
