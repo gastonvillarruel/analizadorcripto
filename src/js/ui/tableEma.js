@@ -45,9 +45,34 @@ export class TableEmaManager {
       });
     }
 
+    // Filtrar entre XX:01 y XX:30: solo mostrar pares con distancia suficiente a EMA 3 en 30m
+    const currentMinute = new Date().getMinutes();
+    if (currentMinute >= 1 && currentMinute <= 30) {
+      result = result.filter(item => {
+        const threshold = item.targetEma3Threshold ?? 2.0;
+        if (!item.distEma3_30m || item.distEma3_30m.absDistancePct < threshold) {
+          return false;
+        }
+        if (this.directionFilter === 'above' && item.distEma3_30m.direction !== 'above') {
+          return false;
+        }
+        if (this.directionFilter === 'below' && item.distEma3_30m.direction !== 'below') {
+          return false;
+        }
+        return true;
+      });
+    }
+
     result.sort((a, b) => {
       let valA = a[this.sortField];
       let valB = b[this.sortField];
+
+      if (valA && typeof valA === 'object' && valA.distancePct !== undefined) {
+        valA = valA.distancePct;
+      }
+      if (valB && typeof valB === 'object' && valB.distancePct !== undefined) {
+        valB = valB.distancePct;
+      }
 
       if (valA === undefined || valA === null) valA = 0;
       if (valB === undefined || valB === null) valB = 0;
@@ -107,8 +132,8 @@ export class TableEmaManager {
               <th class="col-exchange">Exc</th>
               <th class="sortable" id="sort-ema-symbol">Par ${sortIcon('symbol')}</th>
               <th class="sortable" id="sort-ema-change24h">24h ${sortIcon('change24h')}</th>
-              <th class="sortable" id="sort-ema-max3">EMA 3 (30m) ${sortIcon('maxDist3')}</th>
-              <th>EMA 3 (1h)</th>
+              <th class="sortable" id="sort-ema-30m">EMA 3 (30m) ${sortIcon('distEma3_30m')}</th>
+              <th class="sortable" id="sort-ema-1h">EMA 3 (1h) ${sortIcon('distEma3_1h')}</th>
               <th class="col-status">Trend</th>
               <th class="text-right">Ver</th>
             </tr>
@@ -186,7 +211,8 @@ export class TableEmaManager {
 
     bindSort('sort-ema-symbol', 'symbol');
     bindSort('sort-ema-change24h', 'change24h');
-    bindSort('sort-ema-max3', 'maxDist3');
+    bindSort('sort-ema-30m', 'distEma3_30m');
+    bindSort('sort-ema-1h', 'distEma3_1h');
 
     if (window.lucide) window.lucide.createIcons();
   }
